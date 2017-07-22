@@ -81,7 +81,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 		particles[i].x = N_x(gen);
 		particles[i].y = N_y(gen);
 		particles[i].theta = N_theta(gen);
-		
+
 	}
 
 
@@ -108,12 +108,80 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   and the following is a good resource for the actual equation to implement (look at equation
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
+
+
+	for (int j = 0; j < particles.size(); j++){
+		p = particles[j];
+
+		std::vector<int> associations;
+		std::vector<double> sense_x;
+		std::vector<double> sense_y;
+
+		std::vector<LandmarkObs> trans_obs;
+		LandmarkObs obs;
+		for (int i = 0; i < observations.size(); i++){
+			LandmarkObs trans_ob;
+			obs = observations[i];
+
+			// transform from map coordinates to vehicle coordinates
+			trans_ob.x = p.x + (obs.x * cos(p.theta) - obs.y * sin(p.theta));
+			trans_ob.y = p.y + (obs.x * sin(p.theta) + obs.y * cos(p.theta));
+			trans_obs.push_back(trans_ob)
+		}
+		p.weight = 1.0;
+
+		for(int i; i < trans_obs.size(); i++){
+			double closest_dist = sensor_range;
+			int association = 0;
+
+			for(int k; k < map_landmarks.size(); k++){
+				double landmark_x = map_landmarks.landmark_list[k].x_f;
+				double landmark_y = map_landmarks.landmark_list[k].y_f;
+				double calc_dist = math::sqrt(math::pow(trans_obs[i].x - landmark_x, 2.0)
+											 + math::pow(trans_obs[i].y - landmark_y, 2.0));
+				if(calc_dist < closest_dist){
+					closest_dist = calc_dist;
+					association = k;
+				}
+			}
+
+			if(association != 0){
+				double meas_x = trans_obs[i].x;
+				double meas_y = trans_obs[i].y;
+				double mu_x = map_landmarks.landmark_list[association].x_f;
+				double mu_y = map_landmarks.landmark_list[association].y_f;
+
+				long double multiplier = 1/(2 * math::M_PI * std_landmark[0] * std_landmark[1])
+										* math::exp(-( gaussianKernel(meas_x, mu_x, std_landmark[0])
+													  + gaussianKernel(meas_y, mu_y, std_landmark[1])));
+				if (multiplier > 0){
+					p.weight *= multiplier;
+				}
+			}
+			associations.push_back(association + 1);
+			sense_x.push_back(trans_obs[i].x);
+			sense_y.push_back(trans_obs[i].y);
+		}
+
+
+	}
+
+
 }
 
 void ParticleFilter::resample() {
 	// TODO: Resample particles with replacement with probability proportional to their weight.
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
+
+	default_random_engine gen;
+	discrete_distribution<int> distribution(weights.begin(), weights.end());
+	std::vector<Particle> resample_particles;
+
+	for(int i=0; i < num_particles; i++){
+		resample_particles.push_back(particles[distribution(gen)]);
+	}
+	particles = resample_particles;
 
 }
 
@@ -162,4 +230,9 @@ string ParticleFilter::getSenseY(Particle best)
     string s = ss.str();
     s = s.substr(0, s.length()-1);  // get rid of the trailing space
     return s;
+}
+
+
+double gaussianKernel(double x, double mu, double sigma){
+	return pow((x - mu)/sigma, 2.0)/2.0
 }
