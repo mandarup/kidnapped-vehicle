@@ -39,7 +39,7 @@ void ParticleFilter::init(double x, double y, double theta, double std_pos[]) {
 		particle.weight = 1;
 
 		particles.push_back(particle);
-		particles.push_back(1);
+		weights.push_back(1);
 	}
 	is_initialized = true;
 }
@@ -74,9 +74,9 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 			new_theta = theta0 + yaw_rate * delta_t;
 		}
 
-		std::normal_distribution<double> N_x(x,std_pos[0]);
-		std::normal_distribution<double> N_y(y,std_pos[1]);
-		std::normal_distribution<double> N_theta(theta,std_pos[2]);
+		std::normal_distribution<double> N_x(new_x,std_pos[0]);
+		std::normal_distribution<double> N_y(new_y,std_pos[1]);
+		std::normal_distribution<double> N_theta(new_theta,std_pos[2]);
 
 		particles[i].x = N_x(gen);
 		particles[i].y = N_y(gen);
@@ -110,6 +110,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   http://planning.cs.uiuc.edu/node99.html
 
 
+	Particle p;
 	for (int j = 0; j < particles.size(); j++){
 		p = particles[j];
 
@@ -126,7 +127,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			// transform from map coordinates to vehicle coordinates
 			trans_ob.x = p.x + (obs.x * cos(p.theta) - obs.y * sin(p.theta));
 			trans_ob.y = p.y + (obs.x * sin(p.theta) + obs.y * cos(p.theta));
-			trans_obs.push_back(trans_ob)
+			trans_obs.push_back(trans_ob);
 		}
 		p.weight = 1.0;
 
@@ -134,11 +135,11 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			double closest_dist = sensor_range;
 			int association = 0;
 
-			for(int k; k < map_landmarks.size(); k++){
+			for(int k; k < map_landmarks.landmark_list.size(); k++){
 				double landmark_x = map_landmarks.landmark_list[k].x_f;
 				double landmark_y = map_landmarks.landmark_list[k].y_f;
-				double calc_dist = math::sqrt(math::pow(trans_obs[i].x - landmark_x, 2.0)
-											 + math::pow(trans_obs[i].y - landmark_y, 2.0));
+				double calc_dist = sqrt(pow(trans_obs[i].x - landmark_x, 2.0)
+											 + pow(trans_obs[i].y - landmark_y, 2.0));
 				if(calc_dist < closest_dist){
 					closest_dist = calc_dist;
 					association = k;
@@ -151,8 +152,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 				double mu_x = map_landmarks.landmark_list[association].x_f;
 				double mu_y = map_landmarks.landmark_list[association].y_f;
 
-				long double multiplier = 1/(2 * math::M_PI * std_landmark[0] * std_landmark[1])
-										* math::exp(-( gaussianKernel(meas_x, mu_x, std_landmark[0])
+				long double multiplier = 1/(2 * M_PI * std_landmark[0] * std_landmark[1])
+										* exp(-( gaussianKernel(meas_x, mu_x, std_landmark[0])
 													  + gaussianKernel(meas_y, mu_y, std_landmark[1])));
 				if (multiplier > 0){
 					p.weight *= multiplier;
@@ -230,9 +231,4 @@ string ParticleFilter::getSenseY(Particle best)
     string s = ss.str();
     s = s.substr(0, s.length()-1);  // get rid of the trailing space
     return s;
-}
-
-
-double gaussianKernel(double x, double mu, double sigma){
-	return pow((x - mu)/sigma, 2.0)/2.0
 }
