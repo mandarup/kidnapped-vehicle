@@ -241,4 +241,6 @@ inline double gaussianKernel(double x, double mu, double sigma){
 	return pow((x - mu)/sigma, 2.0)/2.0;
 }
 
+
+
 #endif /* HELPER_FUNCTIONS_H_ */

@@ -19,6 +19,13 @@
 
 using namespace std;
 
+inline void prinXY(double x, double y){
+	cout <<  "particle x: "<< x << " y: " <<y <<endl;
+
+}
+
+
+
 void ParticleFilter::init(double x, double y, double theta, double std_pos[]) {
 	// TODO: Set the number of particles. Initialize all particles to first position (based on estimates of
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1.
@@ -62,9 +69,9 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 
 
 		if(yaw_rate == 0){
-			new_x = x0 + velocity * (sin(theta0) - sin(theta0));
-			new_y = y0 + velocity *(-cos(theta0)+ cos(theta0));
-			new_theta = theta0 + yaw_rate * delta_t;
+			new_x = x0 + velocity * (cos(theta0));
+			new_y = y0 + velocity * sin(theta0);
+			new_theta = theta0 ;
 		}
 		else{
 			new_x = x0 + velocity/yaw_rate * (sin(theta0 + yaw_rate * delta_t)
@@ -83,9 +90,6 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 		particles[i].theta = N_theta(gen);
 
 	}
-
-
-
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
@@ -110,9 +114,9 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   http://planning.cs.uiuc.edu/node99.html
 
 
-	Particle p;
-	for (int j = 0; j < particles.size(); j++){
-		p = particles[j];
+
+	for (int p = 0; p < particles.size(); p++){
+		// prinXY(particles[p].x, particles[p].y);
 
 		std::vector<int> associations;
 		std::vector<double> sense_x;
@@ -125,24 +129,30 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			obs = observations[i];
 
 			// transform from map coordinates to vehicle coordinates
-			trans_ob.x = p.x + (obs.x * cos(p.theta) - obs.y * sin(p.theta));
-			trans_ob.y = p.y + (obs.x * sin(p.theta) + obs.y * cos(p.theta));
+			trans_ob.x = particles[p].x + (obs.x * cos(particles[p].theta) - obs.y * sin(particles[p].theta));
+			trans_ob.y = particles[p].y + (obs.x * sin(particles[p].theta) + obs.y * cos(particles[p].theta));
 			trans_obs.push_back(trans_ob);
 		}
-		p.weight = 1.0;
+		particles[p].weight = 1.0;
 
-		for(int i; i < trans_obs.size(); i++){
+		for(int i=0; i < trans_obs.size(); i++){
 			double closest_dist = sensor_range;
 			int association = 0;
 
-			for(int k; k < map_landmarks.landmark_list.size(); k++){
+			// cout << "landmards: " << map_landmarks.landmark_list.size() <<endl;
+			for(int k=0; k < map_landmarks.landmark_list.size(); k++){
 				double landmark_x = map_landmarks.landmark_list[k].x_f;
 				double landmark_y = map_landmarks.landmark_list[k].y_f;
 				double calc_dist = sqrt(pow(trans_obs[i].x - landmark_x, 2.0)
 											 + pow(trans_obs[i].y - landmark_y, 2.0));
+
+				// cout << " particle " << p << "; obs " << i << "; landmark " <<k
+				//      << "; closest_dist " << closest_dist << " calc dist: " << calc_dist << endl;
 				if(calc_dist < closest_dist){
 					closest_dist = calc_dist;
 					association = k;
+
+					// cout << "new closest dist: " << closest_dist << " new association " <<k << endl;
 				}
 			}
 
@@ -152,22 +162,21 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 				double mu_x = map_landmarks.landmark_list[association].x_f;
 				double mu_y = map_landmarks.landmark_list[association].y_f;
 
-				long double multiplier = 1/(2 * M_PI * std_landmark[0] * std_landmark[1])
+				long double multiplier = 1.0/(2.0 * M_PI * std_landmark[0] * std_landmark[1])
 										* exp(-( gaussianKernel(meas_x, mu_x, std_landmark[0])
-													  + gaussianKernel(meas_y, mu_y, std_landmark[1])));
+											  + gaussianKernel(meas_y, mu_y, std_landmark[1])));
 				if (multiplier > 0){
-					p.weight *= multiplier;
+					particles[p].weight *= multiplier;
 				}
+
 			}
 			associations.push_back(association + 1);
 			sense_x.push_back(trans_obs[i].x);
 			sense_y.push_back(trans_obs[i].y);
 		}
-
-
+		particles[p] = SetAssociations(particles[p], associations, sense_x, sense_y);
+		weights[p] = particles[p].weight;
 	}
-
-
 }
 
 void ParticleFilter::resample() {
@@ -182,7 +191,11 @@ void ParticleFilter::resample() {
 	for(int i=0; i < num_particles; i++){
 		resample_particles.push_back(particles[distribution(gen)]);
 	}
+
+	// cout << "resampling : " << resample_particles.size() << " from " << particles.size() << endl;
 	particles = resample_particles;
+
+
 
 }
 
@@ -201,6 +214,13 @@ Particle ParticleFilter::SetAssociations(Particle particle, std::vector<int> ass
 	particle.associations= associations;
  	particle.sense_x = sense_x;
  	particle.sense_y = sense_y;
+
+	// cout << "particle id : " << particle.id << endl;
+	// for(int i = 0; i < associations.size(); i++){
+	// 	cout << "associations " << associations[i] <<endl;
+	// }
+
+	// cout << "sensex " << sense_y <<endl;
 
  	return particle;
 }
