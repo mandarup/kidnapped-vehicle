@@ -31,7 +31,7 @@ void ParticleFilter::init(double x, double y, double theta, double std_pos[]) {
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1.
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
-	num_particles = 100;
+	num_particles = 30;
 	std::default_random_engine gen;
 	std::normal_distribution<double> N_x(x,std_pos[0]);
 	std::normal_distribution<double> N_y(y,std_pos[1]);
@@ -124,6 +124,9 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
 		std::vector<LandmarkObs> trans_obs;
 		LandmarkObs obs;
+
+		cout << "\n" << "Transformations" << endl;
+		cout << "=========================" << endl;
 		for (int i = 0; i < observations.size(); i++){
 			LandmarkObs trans_ob;
 			obs = observations[i];
@@ -132,6 +135,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			trans_ob.x = particles[p].x + (obs.x * cos(particles[p].theta) - obs.y * sin(particles[p].theta));
 			trans_ob.y = particles[p].y + (obs.x * sin(particles[p].theta) + obs.y * cos(particles[p].theta));
 			trans_obs.push_back(trans_ob);
+			cout << "(" <<obs.x << "," << obs.y << ") --> (" << trans_ob.x << "," << trans_ob.y << ")" << endl;
 		}
 		particles[p].weight = 1.0;
 
@@ -140,7 +144,11 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			int association = 0;
 
 			// cout << "landmards: " << map_landmarks.landmark_list.size() <<endl;
+			// cout << "landmarks " <<endl;
 			for(int k=0; k < map_landmarks.landmark_list.size(); k++){
+				// cout << "k,l: "<< k << map_landmarks.landmark_list[k].id_i << endl;
+
+				double landmark_id = map_landmarks.landmark_list[k].id_i;
 				double landmark_x = map_landmarks.landmark_list[k].x_f;
 				double landmark_y = map_landmarks.landmark_list[k].y_f;
 				double calc_dist = sqrt(pow(trans_obs[i].x - landmark_x, 2.0)
@@ -155,6 +163,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 					// cout << "new closest dist: " << closest_dist << " new association " <<k << endl;
 				}
 			}
+			cout << i << " -- " << association << ", ";
+			// cout << particles[p].weight ;
 
 			if(association != 0){
 				double meas_x = trans_obs[i].x;
@@ -165,17 +175,24 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 				long double multiplier = 1.0/(2.0 * M_PI * std_landmark[0] * std_landmark[1])
 										* exp(-( gaussianKernel(meas_x, mu_x, std_landmark[0])
 											  + gaussianKernel(meas_y, mu_y, std_landmark[1])));
-				if (multiplier > 0){
+
+				if (multiplier > 0.0){
 					particles[p].weight *= multiplier;
+					// cout << " * " <<  multiplier << " -> " << particles[p].weight << endl;
 				}
 
+
 			}
-			associations.push_back(association + 1);
+			associations.push_back(association+1);
 			sense_x.push_back(trans_obs[i].x);
 			sense_y.push_back(trans_obs[i].y);
+
+			// cout << particles[p].weight << ", ";
+
 		}
 		particles[p] = SetAssociations(particles[p], associations, sense_x, sense_y);
 		weights[p] = particles[p].weight;
+		cout << " -----> " << particles[p].weight << endl << endl;
 	}
 }
 
@@ -194,8 +211,6 @@ void ParticleFilter::resample() {
 
 	// cout << "resampling : " << resample_particles.size() << " from " << particles.size() << endl;
 	particles = resample_particles;
-
-
 
 }
 

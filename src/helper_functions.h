@@ -237,7 +237,7 @@ inline bool read_landmark_data(std::string filename, std::vector<LandmarkObs>& o
 }
 
 
-inline double gaussianKernel(double x, double mu, double sigma){
+inline long double gaussianKernel(double x, double mu, double sigma){
 	return pow((x - mu)/sigma, 2.0)/2.0;
 }
 

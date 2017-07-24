@@ -45,6 +45,8 @@ int main()
 
   // Create particle filter
   ParticleFilter pf;
+  cout << "New Particle Filter" << endl;
+  cout << "====================" << endl;
 
   h.onMessage([&pf,&map,&delta_t,&sensor_range,&sigma_pos,&sigma_landmark](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -66,6 +68,7 @@ int main()
 
 
           if (!pf.initialized()) {
+             cout << "*********** initializing pf ************" << endl;
 
           	// Sense noisy position data from the simulator
 			double sense_x = std::stod(j[1]["sense_x"].get<std::string>());
@@ -126,12 +129,14 @@ int main()
 				best_particle = particles[i];
 			}
 			weight_sum += particles[i].weight;
+            // cout << i << ":" << particles[i].weight << " ";
 		  }
+          cout <<endl;
 
 
 		//   cout << "highest w " << highest_weight << " x: "<< best_particle.x << " y: " <<best_particle.y <<endl;
 		//   cout <t< "average w " << weight_sum/num_particles << endl;
-        //  cout << "best particle time,x,y,theta " << best_particle.x << " " << best_particle.y << best_particle.theta << endl;
+         cout << "best particle time,x,y,theta " << best_particle.x << " " << best_particle.y << best_particle.theta << endl;
 
           json msgJson;
           msgJson["best_particle_x"] = best_particle.x;
