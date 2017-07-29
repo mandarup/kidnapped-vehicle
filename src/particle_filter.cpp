@@ -141,7 +141,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
 		for(int i=0; i < trans_obs.size(); i++){
 			double closest_dist = sensor_range;
-			int association = 0;
+			int association = -1;
 
 			// cout << "landmards: " << map_landmarks.landmark_list.size() <<endl;
 			// cout << "landmarks " <<endl;
@@ -166,7 +166,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			// cout << i << " -- " << association << ", ";
 			// cout << particles[p].weight ;
 
-			if(association != 0){
+
+			if(association != -1){
 				double meas_x = trans_obs[i].x;
 				double meas_y = trans_obs[i].y;
 				double mu_x = map_landmarks.landmark_list[association].x_f;
@@ -176,13 +177,13 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 										* exp(-( gaussianKernel(meas_x, mu_x, std_landmark[0])
 											  + gaussianKernel(meas_y, mu_y, std_landmark[1])));
 
-				if (multiplier > 0.0){
-					particles[p].weight *= multiplier;
-					// cout << " * " <<  multiplier << " -> " << particles[p].weight << endl;
-				}
-
-
+				//if 0 weight we want particle to die
+				particles[p].weight *= multiplier;
+			}else{
+				//add to kill off such particles
+				particles[p].weight =  0.0;
 			}
+
 			associations.push_back(association+1);
 			sense_x.push_back(trans_obs[i].x);
 			sense_y.push_back(trans_obs[i].y);
