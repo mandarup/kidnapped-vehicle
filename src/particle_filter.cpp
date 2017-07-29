@@ -32,7 +32,7 @@ void ParticleFilter::init(double x, double y, double theta, double std_pos[]) {
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 	num_particles = 30;
-	std::default_random_engine gen;
+	static std::default_random_engine gen;
 	std::normal_distribution<double> N_x(x,std_pos[0]);
 	std::normal_distribution<double> N_y(y,std_pos[1]);
 	std::normal_distribution<double> N_theta(theta,std_pos[2]);
@@ -56,7 +56,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	// NOTE: When adding noise you may find std::normal_distribution and std::default_random_engine useful.
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
-	std::default_random_engine gen;
+	static std::default_random_engine gen;
 
 	for(int i = 0; i < num_particles; i++){
 		double new_x;
@@ -68,9 +68,9 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 		double theta0 = particles[i].theta;
 
 
-		if(yaw_rate == 0){
-			new_x = x0 + velocity * (cos(theta0));
-			new_y = y0 + velocity * sin(theta0);
+		if(fabs(yaw_rate) < 0.00001){
+			new_x = x0 + velocity * (cos(theta0)) * delta_t;
+			new_y = y0 + velocity * sin(theta0) * delta_t;
 			new_theta = theta0 ;
 		}
 		else{
@@ -201,7 +201,7 @@ void ParticleFilter::resample() {
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 
-	default_random_engine gen;
+	static default_random_engine gen;
 	discrete_distribution<int> distribution(weights.begin(), weights.end());
 	std::vector<Particle> resample_particles;
 
