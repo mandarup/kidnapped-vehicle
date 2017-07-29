@@ -125,8 +125,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		std::vector<LandmarkObs> trans_obs;
 		LandmarkObs obs;
 
-		cout << "\n" << "Transformations" << endl;
-		cout << "=========================" << endl;
+		// cout << "\n" << "Transformations" << endl;
+		// cout << "=========================" << endl;
 		for (int i = 0; i < observations.size(); i++){
 			LandmarkObs trans_ob;
 			obs = observations[i];
@@ -135,7 +135,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			trans_ob.x = particles[p].x + (obs.x * cos(particles[p].theta) - obs.y * sin(particles[p].theta));
 			trans_ob.y = particles[p].y + (obs.x * sin(particles[p].theta) + obs.y * cos(particles[p].theta));
 			trans_obs.push_back(trans_ob);
-			cout << "(" <<obs.x << "," << obs.y << ") --> (" << trans_ob.x << "," << trans_ob.y << ")" << endl;
+			// cout << "(" <<obs.x << "," << obs.y << ") --> (" << trans_ob.x << "," << trans_ob.y << ")" << endl;
 		}
 		particles[p].weight = 1.0;
 
@@ -163,7 +163,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 					// cout << "new closest dist: " << closest_dist << " new association " <<k << endl;
 				}
 			}
-			cout << i << " -- " << association << ", ";
+			// cout << i << " -- " << association << ", ";
 			// cout << particles[p].weight ;
 
 			if(association != 0){
@@ -192,7 +192,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		}
 		particles[p] = SetAssociations(particles[p], associations, sense_x, sense_y);
 		weights[p] = particles[p].weight;
-		cout << " -----> " << particles[p].weight << endl << endl;
+		// cout << " -----> " << particles[p].weight << endl << endl;
 	}
 }
 
